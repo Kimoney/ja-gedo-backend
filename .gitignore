@@ -1,0 +1,15 @@
+# Virtual environment
+env/
+.venv/
+.env
+
+# Backups
+.sql
+
+# Migration
+/migrations/
+/instance/
+
+# Python cache files
+__pycache__/
+*.pyc
