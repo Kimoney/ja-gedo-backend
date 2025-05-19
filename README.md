@@ -1,4 +1,4 @@
-# Ja Gedo Safaris Backend
+# Ja Gedo Backend
 
 ## Built with Flask
 
