@@ -1,16 +1,16 @@
 from flask import Blueprint, request, jsonify
 from flask_restful import Api
-import sys
+import sys, os, json 
 from dotenv import load_dotenv
-# from server.app import create_app 
-import os
 from werkzeug.utils import secure_filename
 from server.cv_parser import allowed_file, extract_profile_info, extract_text_from_pdf, auto_fill_form 
 from server.chatbot import ask_ai_agent
-# from server.cv_parser import extract_text_from_pdf, extract_profile_info
 from server.cv_parser import auto_fill_form
 from sentence_transformers import SentenceTransformer, util
-import json
+from langchain_community.embeddings.sentence_transformer import SentenceTransformerEmbeddings
+from langchain_community.vectorstores import SQLiteVec
+from langchain_core.documents import Document
+
 
 main = Blueprint('main', __name__)
 # api = Api(main) 
@@ -26,7 +26,7 @@ def home():
 ai_chatbot_bp = Blueprint("chatbot", __name__)
 
 @ai_chatbot_bp.route("/", methods=["POST"])
-def handle_ai_chatbot():
+def handle_ai_chatbot(): 
     data = request.get_json()
     if not data or "message" not in data:
         return jsonify({"error": "Missing 'message' in request"}), 400
@@ -40,6 +40,9 @@ upload_cv_bp = Blueprint("upload_cv", __name__)
 
 UPLOAD_FOLDER = "uploads"
 ALLOWED_EXTENSIONS = {"pdf"}
+DB_PATH = "uploads/vec_store.db"  
+
+CONFIDENCE_THRESHOLD = 0.85
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
@@ -67,29 +70,58 @@ def upload_cv():
 
 
 
+embedding_function = SentenceTransformerEmbeddings(model_name="all-MiniLM-L6-v2")
 auto_fill_bp = Blueprint("auto_fill", __name__)
 
-@auto_fill_bp.route("/", methods=["POST"])
+@auto_fill_bp.route("/", methods=["POST", "GET"])
 def handle_auto_fill():
     file = request.files.get("cv")
     if not file:
         return jsonify({"error": "No file provided"}), 400
 
-    file_path = f"app/static/uploads/{file.filename}"
+    filename = secure_filename(file.filename)
+    file_path = os.path.join(UPLOAD_FOLDER, filename)
     file.save(file_path)
 
     text = extract_text_from_pdf(file_path)
-    profile = extract_profile_info(text)
+    lines = [line.strip() for line in text.split("\n") if line.strip()]
+    documents = [Document(page_content=line) for line in lines]
+
+    vector_store = SQLiteVec.from_documents( 
+        documents=documents,
+        embedding=embedding_function,
+        table="cv_embeddings",
+        db_file=DB_PATH,
+    )
 
     form_fields = {
-        "full_name": "Enter your full name",
-        "contact_email": "Your email address",
-        "relevant_experience": "Briefly describe your experience with similar projects",
-        "tools_available": "List any tools or equipment you will bring to the job",
-        "skills_required": "Mention the skills you will use for this project"
+        "full_name": "What is the full name of the person?",
+        "contact_email": "What is the person's contact email?",
+        "relevant_experience": "What is their relevant experience?",
+        "tools_available": "What tools or equipment can they bring?",
+        "skills_required": "What skills do they have?"
     }
 
-    filled = auto_fill_form(profile, form_fields)
+    filled = {}
+    for field_key, query_text in form_fields.items():
+        results = vector_store.similarity_search_with_score(query_text, k=1)
+
+        if results:
+            match, score = results[0]
+            if score >= CONFIDENCE_THRESHOLD:
+                filled[field_key] = {
+                    "value": match.page_content,
+                    
+                }
+            else:
+                filled[field_key] = {
+                    "value": "", 
+                } 
+        else:
+            filled[field_key] = {
+                "value": "",
+            }
+
     return jsonify({"auto_filled": filled})
 
 
@@ -97,7 +129,7 @@ def handle_auto_fill():
 match_bp = Blueprint("match_maker", __name__)
 model = SentenceTransformer("all-MiniLM-L6-v2") 
 
-@match_bp.route("/", methods=["POST"])
+@match_bp.route("/", methods=["GET"])
 def match_profiles():
     data = request.get_json()
 
