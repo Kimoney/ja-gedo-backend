@@ -1,45 +1,45 @@
-from flask import Flask
-from flask_cors import CORS
-from flask_migrate import Migrate
-from .models import db
-from .config import DbConnection, Config
-from server.routes import ai_chatbot_bp
+# from flask import Flask
+# from flask_cors import CORS
+# from flask_migrate import Migrate
+# from .models import db
+# from .config import Config
+# import os
 
-def create_app():
-    app = Flask(__name__)
+# def create_app():
+#     app = Flask(__name__)
     
-    app.secret_key = Config.SECRET_KEY
-    CORS(app, resources={r"/*": {"origins": ["http://localhost:5173", "https://ja-gedo-frontend.vercel.app/"], "supports_credentials": True}})
-    
-    # Use environment variables to get sensitive information
-    db_user = DbConnection.DB_USER
-    db_password = DbConnection.DB_PASSWORD
-    db_name = DbConnection.DB_NAME
-    db_host = DbConnection.DB_HOST
-    db_port = DbConnection.DB_PORT 
+#     app.secret_key = Config.SECRET_KEY
+#     CORS(app, resources={r"/*": {"origins": ["http://localhost:5173", "https://ja-gedo-frontend.vercel.app/"], "supports_credentials": True}})
 
-    # Configure the application
-    
-    # PostgreSQL database
-    app.config['SQLALCHEMY_DATABASE_URI'] = f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
-    
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+#     # SQLite database path
+#     basedir = os.path.abspath(os.path.dirname(__file__))
+#     sqlite_path = os.path.join(basedir, 'app.db')
+#     app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{sqlite_path}"
+#     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-    # Initialize the database
-    db.init_app(app)
+#     db.init_app(app)
+#     migrate = Migrate(app, db)
 
-    # Initialize Flask-Migrate
-    migrate = Migrate(app, db)
+#     with app.app_context():
+#         from .routes import main
+#         from .routes import ai_chatbot_bp
+#         from .routes import upload_cv_bp
+#         from .routes import auto_fill_bp
+#         from .routes import match_bp 
 
-    app.register_blueprint(ai_chatbot_bp)
+#         API_PREFIX = '/api/v1'
 
-    # Register blueprints or routes
-    with app.app_context():
-        from .routes import main 
-        from .routes import ai_chatbot_bp 
-        from .routes import upload_cv_bp
-        from .routes import auto_fill_bp
-        from .routes import match_bp
-        app.register_blueprint(main, ai_chatbot_bp, upload_cv_bp, auto_fill_bp, match_bp) 
+#         app.register_blueprint(main, url_prefix = API_PREFIX) 
+#         app.register_blueprint(ai_chatbot_bp, url_prefix=f'{API_PREFIX}/chatbot') 
+#         app.register_blueprint(upload_cv_bp, url_prefix=f'{API_PREFIX}/upload-cv') 
+#         app.register_blueprint(auto_fill_bp, url_prefix=f'{API_PREFIX}/auto-fill') 
+#         app.register_blueprint(match_bp, url_prefix=API_PREFIX) 
 
-    return app 
+        
+#         print("Registered Routes:")
+#         for rule in app.url_map.iter_rules():
+#             print(f"Endpoint: {rule.endpoint}, Methods: {rule.methods}, Path: {rule.rule}")
+
+#     return app
+
+

@@ -2,30 +2,30 @@ from flask import Blueprint, request, jsonify
 from flask_restful import Api
 import sys
 from dotenv import load_dotenv
-from server.app import create_app 
+# from server.app import create_app 
 import os
 from werkzeug.utils import secure_filename
 from server.cv_parser import allowed_file, extract_profile_info, extract_text_from_pdf, auto_fill_form 
 from server.chatbot import ask_ai_agent
-from server.cv_parser import extract_text_from_pdf, extract_profile_info
+# from server.cv_parser import extract_text_from_pdf, extract_profile_info
 from server.cv_parser import auto_fill_form
 from sentence_transformers import SentenceTransformer, util
 import json
 
 main = Blueprint('main', __name__)
-api = Api(main)
+# api = Api(main) 
 
 # API Version 1 Prefix
 API_PREFIX = '/api/v1'
 
-@main.route('/')
+@main.route('/', methods=["GET"])
 def home():
-    return 'Welcome To Ja Gedo API!'
+    return jsonify({"message": "API is running"}), 200
 
 
 ai_chatbot_bp = Blueprint("chatbot", __name__)
 
-@ai_chatbot_bp.route("/chatbot", methods=["POST"])
+@ai_chatbot_bp.route("/", methods=["POST"])
 def handle_ai_chatbot():
     data = request.get_json()
     if not data or "message" not in data:
@@ -46,7 +46,7 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-@upload_cv_bp.route("/upload-cv", methods=["POST"])
+@upload_cv_bp.route("/", methods=["POST"])
 def upload_cv():
     if "file" not in request.files:
         return jsonify({"error": "No file part in request"}), 400
@@ -69,7 +69,7 @@ def upload_cv():
 
 auto_fill_bp = Blueprint("auto_fill", __name__)
 
-@auto_fill_bp.route("/auto-fill", methods=["POST"])
+@auto_fill_bp.route("/", methods=["POST"])
 def handle_auto_fill():
     file = request.files.get("cv")
     if not file:
@@ -97,7 +97,7 @@ def handle_auto_fill():
 match_bp = Blueprint("match_maker", __name__)
 model = SentenceTransformer("all-MiniLM-L6-v2") 
 
-@match_bp.route("/api/match", methods=["POST"])
+@match_bp.route("/", methods=["POST"])
 def match_profiles():
     data = request.get_json()
 
@@ -128,8 +128,3 @@ def match_profiles():
     scored_fundis.sort(key=lambda x: x["similarity"], reverse=True)
 
     return jsonify({"matches": scored_fundis})
-
-
-
-
-

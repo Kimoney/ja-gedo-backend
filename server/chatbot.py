@@ -1,11 +1,13 @@
-from langchain.llms import OpenAI
+# from langchain.llms import OpenAI
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
 import os
+from dotenv import load_dotenv
+load_dotenv() 
+from langchain_openai import OpenAI
 
 
-llm = OpenAI(openai_api_key=os.getenv("OPENAI_API_KEY"))
-
+llm = OpenAI(openai_api_key=os.getenv("OPEN_API_KEY"))
 
 template = """
 You are an AI assistant with expertise in construction project cost estimation and technical advice.
