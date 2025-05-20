@@ -3,6 +3,7 @@ from flask_cors import CORS
 from flask_migrate import Migrate
 from .models import db
 from .config import DbConnection, Config
+from server.routes import ai_chatbot_bp
 
 def create_app():
     app = Flask(__name__)
@@ -15,7 +16,7 @@ def create_app():
     db_password = DbConnection.DB_PASSWORD
     db_name = DbConnection.DB_NAME
     db_host = DbConnection.DB_HOST
-    db_port = DbConnection.DB_PORT
+    db_port = DbConnection.DB_PORT 
 
     # Configure the application
     
@@ -30,9 +31,15 @@ def create_app():
     # Initialize Flask-Migrate
     migrate = Migrate(app, db)
 
+    app.register_blueprint(ai_chatbot_bp)
+
     # Register blueprints or routes
     with app.app_context():
-        from .routes import main  # Import your routes
-        app.register_blueprint(main)
+        from .routes import main 
+        from .routes import ai_chatbot_bp 
+        from .routes import upload_cv_bp
+        from .routes import auto_fill_bp
+        from .routes import match_bp
+        app.register_blueprint(main, ai_chatbot_bp, upload_cv_bp, auto_fill_bp, match_bp) 
 
-    return app
+    return app 
